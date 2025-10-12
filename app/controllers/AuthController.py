@@ -70,6 +70,46 @@ def invite_user():
 
     return jsonify({'message': f'Invitation sent to {email}.', 'otp_code': otp_code}), 201
 
+# -----------------------------
+# Public Signup (no OTP required)
+# -----------------------------
+@auth_bp.route('/signup', methods=['POST'])
+def signup_user():
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    phone = data.get('phone')
+    password = data.get('password')
+
+    if not all([name, email, phone, password]):
+        return jsonify({'error': 'All fields are required.'}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email already registered.'}), 400
+
+    # Create new user as Chairperson by default
+    new_user = User(
+        name=name,
+        email=email,
+        phone=phone,
+        role='Chairperson',
+        kyc_verified=True  # no OTP needed
+    )
+    new_user.set_password(password)
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Signup successful. You can now login.',
+        'user': {
+            'user_id': new_user.user_id,
+            'name': new_user.name,
+            'email': new_user.email,
+            'role': new_user.role
+        }
+    }), 201
+
 
 # -----------------------------
 # Register User via OTP
@@ -129,9 +169,9 @@ def login_user():
         return jsonify({'error': 'Invalid credentials'}), 401
 
     # Ensure user has a valid SACCO
-    sacco = Sacco.query.get(user.sacco_id)
-    if not sacco:
-        return jsonify({'error': 'User not assigned to a valid SACCO.'}), 403
+    # sacco = Sacco.query.get(user.sacco_id)
+    # if not sacco:
+    #     return jsonify({'error': 'User not assigned to a valid SACCO.'}), 403
 
     if not user.kyc_verified:
         return jsonify({'error': 'KYC not verified. Complete registration first.'}), 403

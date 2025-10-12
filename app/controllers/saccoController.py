@@ -45,6 +45,7 @@ def create_sacco():
     if not bank_account:
         notif = Notification(
             user_id=current_user_id,
+            subject="Missing ABSA Account",
             message=f'SACCO "{name}" created without ABSSA account. Please add account details.'
         )
         db.session.add(notif)
@@ -53,6 +54,7 @@ def create_sacco():
     # General notification for SACCO creation
     notif_general = Notification(
         user_id=current_user_id,
+         subject="SACCO Created",
         message=f'SACCO "{name}" was created successfully.'
     )
     db.session.add(notif_general)
