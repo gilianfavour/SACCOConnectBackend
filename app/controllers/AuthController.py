@@ -87,28 +87,37 @@ def signup_user():
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already registered.'}), 400
 
-    # Create new user as Chairperson by default
-    new_user = User(
-        name=name,
-        email=email,
-        phone=phone,
-        role='Chairperson',
-        kyc_verified=True  # no OTP needed
-    )
-    new_user.set_password(password)
+    try:
+        # Create new user as Chairperson by default
+        new_user = User(
+            name=name,
+            email=email,
+            phone=phone,
+            role='Chairperson',
+            kyc_verified=True
+        )
+        new_user.set_password(password)
 
-    db.session.add(new_user)
-    db.session.commit()
+        db.session.add(new_user)
+        db.session.commit()
 
-    return jsonify({
-        'message': 'Signup successful. You can now login.',
-        'user': {
-            'user_id': new_user.user_id,
-            'name': new_user.name,
-            'email': new_user.email,
-            'role': new_user.role
-        }
-    }), 201
+        # Create JWT token
+        access_token = create_access_token(identity=new_user.user_id, expires_delta=timedelta(hours=8))
+
+        return jsonify({
+            'message': 'Signup successful. You can now login.',
+            'user': {
+                'user_id': new_user.user_id,
+                'name': new_user.name,
+                'email': new_user.email,
+                'role': new_user.role
+            },
+            'access_token': access_token
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 # -----------------------------
